@@ -7,6 +7,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 
+import com.lee.downloaddemo.db.FileDao;
+import com.lee.downloaddemo.db.FileDaoImpl;
 import com.lee.downloaddemo.entity.FileInfo;
 
 import org.apache.http.HttpStatus;
@@ -31,9 +33,12 @@ public class DownloadService extends Service {
     public static final String ACTION_START = "ACTION_START";
     public static final String ACTION_STOP = "ACTION_STOP";
     public static final String ACTION_UPDATE = "ACTION_UPDATE";
+    public static final String ACTION_QUIT = "ACTION_QUIT";
     public static final String DOWNLOAD_COMPLETED = "DOWNLOAD_COMPLETED";
 
     private static final int GET_SUCCESS = 10000;
+
+    private FileDao mFileDao = new FileDaoImpl(this);
 
     private Map<Integer, DownloadTask> downloadTasks = new LinkedHashMap<>();//文件下载任务哈希集合
 
@@ -68,30 +73,49 @@ public class DownloadService extends Service {
 
         String action = intent.getAction();
 
-        FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("file");
+        if (ACTION_QUIT.equals(action)) {
 
-        DownloadTask currentTask = null;
+            stopAllTask();
 
-        if (downloadTasks.containsKey(fileInfo.getId())) {
-            currentTask = downloadTasks.get(fileInfo.getId());
-        }
+        } else {
+            FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("file");
 
-        if (ACTION_START.equals(action)) {//开始下载
+            DownloadTask currentTask = null;
 
-            if (currentTask == null) {
-                new MyThread(fileInfo).start();//启动初始化线程，获取文件长度，并在本地创建相应大小的保存文件
-            } else {
-                currentTask.download();
+            if (downloadTasks.containsKey(fileInfo.getId())) {
+                currentTask = downloadTasks.get(fileInfo.getId());
             }
 
-        } else if (ACTION_STOP.equals(action)) {//停止下载
+            if (ACTION_START.equals(action)) {//开始下载
 
-            if (currentTask != null) {
-                currentTask.isPause = true;
+                if (currentTask == null) {
+                    new MyThread(fileInfo).start();//启动初始化线程，获取文件长度，并在本地创建相应大小的保存文件
+                } else {
+                    currentTask.download();
+                }
+
+            } else if (ACTION_STOP.equals(action)) {//停止下载
+
+                if (currentTask != null) {
+                    currentTask.isPause = true;
+                }
             }
         }
 
         return super.onStartCommand(intent, flags, startId);
+    }
+
+    /**
+     * 停止所有的下载任务，并将所有下载任务信息写入数据库
+     */
+    public void stopAllTask() {
+        for (Integer key : downloadTasks.keySet()) {
+            DownloadTask downloadTask = downloadTasks.get(key);
+
+            mFileDao.updateFile(downloadTask.fileInfo);
+
+            downloadTask.isPause = true;
+        }
     }
 
     @Override

@@ -2,7 +2,6 @@ package com.lee.downloaddemo.service;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 
 import com.lee.downloaddemo.db.ThreadDao;
 import com.lee.downloaddemo.db.ThreadDaoImpl;
@@ -27,7 +26,7 @@ public class DownloadTask {
 
     private Context context;
 
-    private FileInfo fileInfo;
+    public FileInfo fileInfo;
 
     private ThreadDao mThreadDao;
 
@@ -57,8 +56,6 @@ public class DownloadTask {
 
         //获取该URL的所有下载任务
         threadList = mThreadDao.queryThread(fileInfo.getUrl());
-
-        Log.d("print", "fileInfo.getUrl()=" + fileInfo.getUrl());
 
         ThreadInfo threadInfo = null;
 
@@ -183,11 +180,10 @@ public class DownloadTask {
 
                         if (System.currentTimeMillis() - lastTime > 1000) {
 
-                            int progress = finished * 100 / fileInfo.getTotalLength();
+                            fileInfo.setFinished(finished * 100 / fileInfo.getTotalLength());
 
                             //1秒发送一次广播通知Activity更新下载进度
-                            intent.putExtra("fileId", fileInfo.getId());
-                            intent.putExtra("finished", progress);
+                            intent.putExtra("file", fileInfo);
 
                             context.sendBroadcast(intent);
 
@@ -204,10 +200,13 @@ public class DownloadTask {
 
                     isFinished = true;//设置该线程已经下载完成
                     if (checkAllThreadIsFinished()) {//每个线程下载完成后都需要询问该文件是否下载完成
+
+                        fileInfo.setFinished(100);//设置完成值为100
+                        fileInfo.setIsFinished(true);//标记已下载完成
+
                         //下载完成，发送广播通知Activity
                         Intent intent1 = new Intent(DownloadService.DOWNLOAD_COMPLETED);
-                        intent1.putExtra("fileId", fileInfo.getId());
-                        intent1.putExtra("fileName", fileInfo.getFileName());
+                        intent1.putExtra("file", fileInfo);
                         context.sendBroadcast(intent1);
                         //删除该文件的相关下载任务
                         mThreadDao.deleteThread(fileInfo.getUrl());

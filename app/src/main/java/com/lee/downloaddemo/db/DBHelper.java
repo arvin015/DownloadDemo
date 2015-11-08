@@ -19,8 +19,11 @@ public class DBHelper extends SQLiteOpenHelper {
 
     private static final String SQL_CREATE = "create table thread_info(_id integer primary key autoincrement," +
             "thread_id integer, url text, start integer, end integer, finished integer)";
-
     private static final String SQL_DROP = "drop table if exists thread_info";
+
+    private static final String SQL_CREATE1 = "create table file_info(_id integer primary key autoincrement, " +
+            "file_id integer, file_name text, url text, total_length integer, finished integer, is_finished text)";
+    private static final String SQL_DROP1 = "drop table if exists file_info";
 
     private DBHelper(Context context) {
         super(context, name, null, version);
@@ -38,11 +41,16 @@ public class DBHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
 
         sqLiteDatabase.execSQL(SQL_CREATE);
+
+        sqLiteDatabase.execSQL(SQL_CREATE1);
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase sqLiteDatabase, int i, int i1) {
         sqLiteDatabase.execSQL(SQL_DROP);
         sqLiteDatabase.execSQL(SQL_CREATE);
+
+        sqLiteDatabase.execSQL(SQL_DROP1);
+        sqLiteDatabase.execSQL(SQL_CREATE1);
     }
 }

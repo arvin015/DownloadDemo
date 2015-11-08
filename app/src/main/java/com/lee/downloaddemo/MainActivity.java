@@ -12,6 +12,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import com.lee.downloaddemo.db.FileDao;
+import com.lee.downloaddemo.db.FileDaoImpl;
 import com.lee.downloaddemo.db.ThreadDaoImpl;
 import com.lee.downloaddemo.entity.FileInfo;
 import com.lee.downloaddemo.service.DownloadService;
@@ -34,17 +36,29 @@ public class MainActivity extends Activity {
 
     private ThreadAdapter threadAdapter;
 
+    private FileDao mFileDao;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         context = this;
+        mFileDao = new FileDaoImpl(this);
 
         fileList = new ArrayList<>();
         fileList.add(new FileInfo(1, "http://www.imooc.com/mobile/mukewang.apk", 0, 0, false));
         fileList.add(new FileInfo(2, "http://gdown.baidu.com/data/wisegame/2defe926519feba7/tielu12306_52.apk", 0, 0, false));
         fileList.add(new FileInfo(3, "http://dx2.9ht.com/ls/9ht.com.zhuishushenqi.zip", 0, 0, false));
+
+        for (FileInfo fileInfo : fileList) {
+            FileInfo fileInfo1 = mFileDao.selectFileByFileId(fileInfo.getId());
+            if (fileInfo1 != null) {
+
+                fileInfo.setIsFinished(fileInfo1.isFinished());
+                fileInfo.setFinished(fileInfo1.getFinished());
+            }
+        }
 
         init();
 
@@ -94,9 +108,17 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+
+        Intent intent = new Intent(context, DownloadService.class);
+        intent.setAction(DownloadService.ACTION_QUIT);
+        startService(intent);
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
-
         unregisterReceiver(mBroadcast);
     }
 
@@ -106,23 +128,19 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
 
-            int fileId = intent.getIntExtra("fileId", 0);
+            FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("file");
 
             if (DownloadService.ACTION_UPDATE.equals(intent.getAction())) {//更新下载进度条
 
-                int finished = intent.getIntExtra("finished", 0);
-
                 //更新下载列表
-                threadAdapter.updateProgress(fileId, finished);
+                threadAdapter.updateProgress(fileInfo.getId(), fileInfo.getFinished());
 
             } else if (DownloadService.DOWNLOAD_COMPLETED.equals(intent.getAction())) {//下载完成
 
-                String fileName = intent.getStringExtra("fileName");
-
                 //下载完成，改变按钮状态
-                threadAdapter.setCompleted(fileId);
+                threadAdapter.setCompleted(fileInfo);
 
-                Toast.makeText(context, fileName + "下载完成", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, fileInfo.getFileName() + "下载完成", Toast.LENGTH_SHORT).show();
             }
         }
     }

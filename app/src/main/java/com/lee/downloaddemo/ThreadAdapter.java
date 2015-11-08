@@ -2,7 +2,6 @@ package com.lee.downloaddemo;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +11,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
+import com.lee.downloaddemo.db.FileDao;
+import com.lee.downloaddemo.db.FileDaoImpl;
 import com.lee.downloaddemo.entity.FileInfo;
 import com.lee.downloaddemo.service.DownloadService;
 
@@ -76,6 +77,10 @@ public class ThreadAdapter extends BaseAdapter {
                     if (b) {
                         //开启后台Service开始下载
                         intent.setAction(DownloadService.ACTION_START);
+
+                        //保存文件信息到数据库
+                        FileDao mFileDao = new FileDaoImpl(context);
+                        mFileDao.insertFile(fileInfo);
                     } else {
                         //结束下载
                         intent.setAction(DownloadService.ACTION_STOP);
@@ -95,8 +100,7 @@ public class ThreadAdapter extends BaseAdapter {
 
         if (fileInfo.isFinished()) {
             viewHolder.downloadBtn.setEnabled(false);
-            viewHolder.downloadBtn.setText("打开");
-            viewHolder.progressBar.setProgress(0);
+            viewHolder.downloadBtn.setText("下载完成");
         }
 
         return view;
@@ -118,10 +122,11 @@ public class ThreadAdapter extends BaseAdapter {
     /**
      * 设置指定文件已下载完成
      *
-     * @param fileId
+     * @param fileInfo
      */
-    public void setCompleted(int fileId) {
-        fileList.get(fileId - 1).setIsFinished(true);
+    public void setCompleted(FileInfo fileInfo) {
+        fileList.get(fileInfo.getId() - 1).setIsFinished(fileInfo.isFinished());
+        fileList.get(fileInfo.getId() - 1).setFinished(fileInfo.getFinished());
         notifyDataSetChanged();
     }
 
