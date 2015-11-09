@@ -4,7 +4,7 @@ import com.lee.downloaddemo.entity.FileInfo;
 
 /**
  * 文件数据访问接口
- * <p>
+ * <p/>
  * Created by Administrator on 2015/11/8.
  */
 public interface FileDao {
@@ -30,4 +30,11 @@ public interface FileDao {
      * @return
      */
     public FileInfo selectFileByFileId(int fileId);
+
+    /**
+     * 删除文件下载记录
+     *
+     * @param fileId
+     */
+    public void deleteFileByFileId(int fileId);
 }

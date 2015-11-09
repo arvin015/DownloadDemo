@@ -1,8 +1,10 @@
 package com.lee.downloaddemo;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -47,9 +49,9 @@ public class MainActivity extends Activity {
         mFileDao = new FileDaoImpl(this);
 
         fileList = new ArrayList<>();
-        fileList.add(new FileInfo(1, "http://www.imooc.com/mobile/mukewang.apk", 0, 0, false));
-        fileList.add(new FileInfo(2, "http://gdown.baidu.com/data/wisegame/2defe926519feba7/tielu12306_52.apk", 0, 0, false));
-        fileList.add(new FileInfo(3, "http://dx2.9ht.com/ls/9ht.com.zhuishushenqi.zip", 0, 0, false));
+        fileList.add(new FileInfo(1, "慕课网", "http://www.imooc.com/mobile/mukewang.apk", 0, 0, false));
+        fileList.add(new FileInfo(2, "12306", "http://gdown.baidu.com/data/wisegame/2defe926519feba7/tielu12306_52.apk", 0, 0, false));
+        fileList.add(new FileInfo(3, "追书神器", "http://dx2.9ht.com/ls/9ht.com.zhuishushenqi.zip", 0, 0, false));
 
         for (FileInfo fileInfo : fileList) {
             FileInfo fileInfo1 = mFileDao.selectFileByFileId(fileInfo.getId());
@@ -72,14 +74,40 @@ public class MainActivity extends Activity {
         clearBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                for (FileInfo fileInfo : fileList) {
-                    new ThreadDaoImpl(context).deleteThread(fileInfo.getUrl());
 
-                    File file = new File(DownloadService.DOWNLOAD_PATH, fileInfo.getFileName());
-                    if (file.exists()) {
-                        file.delete();
-                    }
-                }
+                new AlertDialog.Builder(context)
+                        .setTitle("提示")
+                        .setMessage("确定删除所有下载文件？")
+                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                //停止所有下载
+                                Intent intent = new Intent(context, DownloadService.class);
+                                intent.setAction(DownloadService.ACTION_STOP_ALL);
+                                startService(intent);
+
+                                //删除本地已下载文件及本地数据库下载任务信息
+                                for (FileInfo fileInfo : fileList) {
+                                    new ThreadDaoImpl(context).deleteThread(fileInfo.getUrl());//删除数据库下载任务信息
+                                    new FileDaoImpl(context).deleteFileByFileId(fileInfo.getId());//删除数据库文件信息
+
+                                    File file = new File(DownloadService.DOWNLOAD_PATH,
+                                            fileInfo.getUrl().substring(fileInfo.getUrl().lastIndexOf("/") + 1));
+                                    if (file.exists()) {
+                                        file.delete();
+                                    }
+                                }
+
+                                //重设文件列表
+                                if (threadAdapter != null) {
+                                    threadAdapter.resetFileList();
+                                }
+
+                            }
+                        })
+                        .setNegativeButton("取消", null).show();
+
+
             }
         });
 
@@ -111,6 +139,7 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
 
+        //退出APP，停止所有下载任务，并更新本地下载信息
         Intent intent = new Intent(context, DownloadService.class);
         intent.setAction(DownloadService.ACTION_QUIT);
         startService(intent);

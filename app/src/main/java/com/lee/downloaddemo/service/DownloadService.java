@@ -30,11 +30,12 @@ public class DownloadService extends Service {
 
     public static final String DOWNLOAD_PATH = Environment.getExternalStorageDirectory().getAbsoluteFile() + "/downloads";
 
-    public static final String ACTION_START = "ACTION_START";
-    public static final String ACTION_STOP = "ACTION_STOP";
-    public static final String ACTION_UPDATE = "ACTION_UPDATE";
-    public static final String ACTION_QUIT = "ACTION_QUIT";
-    public static final String DOWNLOAD_COMPLETED = "DOWNLOAD_COMPLETED";
+    public static final String ACTION_START = "ACTION_START";            //开始下载
+    public static final String ACTION_STOP = "ACTION_STOP";              //停止下载
+    public static final String ACTION_UPDATE = "ACTION_UPDATE";          //更新下载进度
+    public static final String ACTION_QUIT = "ACTION_QUIT";              //退出应用
+    public static final String ACTION_STOP_ALL = "ACTION_STOP_ALL";      //停止所有下载
+    public static final String DOWNLOAD_COMPLETED = "DOWNLOAD_COMPLETED";//下载完成
 
     private static final int GET_SUCCESS = 10000;
 
@@ -75,7 +76,11 @@ public class DownloadService extends Service {
 
         if (ACTION_QUIT.equals(action)) {
 
-            stopAllTask();
+            stopAllTask(true);
+
+        } else if (ACTION_STOP_ALL.equals(action)) {
+
+            stopAllTask(false);
 
         } else {
             FileInfo fileInfo = (FileInfo) intent.getSerializableExtra("file");
@@ -106,13 +111,17 @@ public class DownloadService extends Service {
     }
 
     /**
-     * 停止所有的下载任务，并将所有下载任务信息写入数据库
+     * 停止所有的下载任务
+     *
+     * @param needUpdateFile 是否需要保存下载文件信息到本地
      */
-    public void stopAllTask() {
+    public void stopAllTask(boolean needUpdateFile) {
         for (Integer key : downloadTasks.keySet()) {
             DownloadTask downloadTask = downloadTasks.get(key);
 
-            mFileDao.updateFile(downloadTask.fileInfo);
+            if (needUpdateFile) {
+                mFileDao.updateFile(downloadTask.fileInfo);
+            }
 
             downloadTask.isPause = true;
         }
@@ -166,7 +175,8 @@ public class DownloadService extends Service {
                 if (!dir.exists()) {
                     dir.mkdirs();
                 }
-                File saveFile = new File(dir, fileInfo.getFileName());
+                File saveFile = new File(dir,
+                        fileInfo.getUrl().substring(fileInfo.getUrl().lastIndexOf("/") + 1));
 
                 //创建可任意写入的本地保存文件，并设置长度
                 raf = new RandomAccessFile(saveFile, "rwd");

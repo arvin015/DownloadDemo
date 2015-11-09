@@ -25,6 +25,7 @@ public class FileDaoImpl implements FileDao {
         db.execSQL("insert into file_info(file_id, file_name, url, total_length, finished, is_finished)" +
                 " values(?, ?, ?, ?, ?, ?)", new Object[]{fileInfo.getId(), fileInfo.getFileName(), fileInfo.getUrl(),
                 fileInfo.getFinished(), String.valueOf(fileInfo.isFinished())});
+        db.close();
     }
 
     @Override
@@ -32,6 +33,7 @@ public class FileDaoImpl implements FileDao {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         db.execSQL("update file_info set finished=?, is_finished=? where file_id=?", new Object[]{fileInfo.getFinished(),
                 String.valueOf(fileInfo.isFinished()), fileInfo.getId()});
+        db.close();
     }
 
     @Override
@@ -43,15 +45,27 @@ public class FileDaoImpl implements FileDao {
 
             FileInfo fileInfo = new FileInfo(
                     cursor.getInt(cursor.getColumnIndex("file_id")),
+                    cursor.getString(cursor.getColumnIndex("file_name")),
                     cursor.getString(cursor.getColumnIndex("url")),
                     cursor.getInt(cursor.getColumnIndex("total_length")),
                     cursor.getInt(cursor.getColumnIndex("finished")),
                     Boolean.parseBoolean(cursor.getString(cursor.getColumnIndex("is_finished")))
             );
 
+            db.close();
+
             return fileInfo;
         }
 
+        db.close();
+
         return null;
+    }
+
+    @Override
+    public synchronized void deleteFileByFileId(int fileId) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        db.execSQL("delete from file_info where file_id=?", new String[]{"" + fileId});
+        db.close();
     }
 }

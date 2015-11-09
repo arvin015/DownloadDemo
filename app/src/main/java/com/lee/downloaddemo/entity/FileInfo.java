@@ -19,16 +19,13 @@ public class FileInfo implements Serializable {
     public FileInfo() {
     }
 
-    public FileInfo(int id, String url, int totalLength, int finished, boolean isFinished) {
+    public FileInfo(int id, String fileName, String url, int totalLength, int finished, boolean isFinished) {
         this.id = id;
         this.url = url;
         this.totalLength = totalLength;
         this.finished = finished;
         this.isFinished = isFinished;
-
-        if (url != null) {
-            fileName = url.substring(url.lastIndexOf("/") + 1);
-        }
+        this.fileName = fileName;
     }
 
     public int getId() {

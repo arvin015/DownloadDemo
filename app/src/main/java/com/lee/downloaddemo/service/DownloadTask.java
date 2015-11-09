@@ -153,7 +153,8 @@ public class DownloadTask {
 
                 if (conn.getResponseCode() == HttpStatus.SC_PARTIAL_CONTENT) {//部分下载响应成功
 
-                    File saveFile = new File(DownloadService.DOWNLOAD_PATH, fileInfo.getFileName());
+                    File saveFile = new File(DownloadService.DOWNLOAD_PATH,
+                            fileInfo.getUrl().substring(fileInfo.getUrl().lastIndexOf("/") + 1));
 
                     RandomAccessFile raf = new RandomAccessFile(saveFile, "rwd");
                     //设置写入位置
@@ -199,10 +200,11 @@ public class DownloadTask {
                     }
 
                     isFinished = true;//设置该线程已经下载完成
+
                     if (checkAllThreadIsFinished()) {//每个线程下载完成后都需要询问该文件是否下载完成
 
-                        fileInfo.setFinished(100);//设置完成值为100
-                        fileInfo.setIsFinished(true);//标记已下载完成
+                        fileInfo.setFinished(100);//设置文件完成值为100
+                        fileInfo.setIsFinished(true);//标记文件已下载完成
 
                         //下载完成，发送广播通知Activity
                         Intent intent1 = new Intent(DownloadService.DOWNLOAD_COMPLETED);
